@@ -1,0 +1,56 @@
+# Kubernetes API version for Service resources
+apiVersion: v1
+# Resource type: Service - an abstraction that defines a logical set of Pods and a policy for accessing them
+kind: Service
+# Metadata section: contains information about the Service
+metadata:
+  # Name of the Service - used for DNS resolution within the cluster
+  name: my-app-svc
+  # Labels: key-value pairs for organizing and selecting resources
+  labels:
+    # Label indicating this Service is for the my-app application
+    app: my-app
+# Specification section: defines the desired behavior of the Service
+spec:
+  # Service type: ClusterIP (default) - exposes the Service on an internal cluster IP
+  # ClusterIP Services are only accessible within the cluster, not from external networks
+  # Kubernetes assigns an internal IP address from the cluster's IP range to this Service
+  # This IP is stable and doesn't change unless the Service is deleted and recreated
+  type: ClusterIP
+  # Ports section: defines how the Service exposes the Pods
+  ports:
+  # First port mapping
+  - port: 80          # The port on which the Service will listen (Service port)
+    targetPort: 80    # The port on the Pod where the application is running (container port)
+    protocol: TCP     # Network protocol (TCP is default, also supports UDP)
+  # Selector: defines which Pods this Service will route traffic to
+  # The Service will load balance traffic to all Pods that have matching labels
+  # In this case, Pods with label "app: my-app" will receive traffic
+  selector:
+    # Label selector: matches Pods with this exact label
+    app: my-app
+
+# How ClusterIP Works in Detail:
+# 1. When you create a ClusterIP Service, Kubernetes assigns it a virtual IP address from the cluster's internal IP range
+# 2. This IP is only routable within the cluster and is not accessible from outside
+# 3. The Service acts as a load balancer, distributing incoming traffic across all matching Pods
+# 4. Traffic flow: Client -> Service IP:Port -> kube-proxy -> Pod IP:targetPort
+# 5. kube-proxy (running on each node) implements the Service by:
+#    - Maintaining network rules (iptables/ipvs) that capture traffic to the Service IP
+#    - Performing load balancing using various algorithms (round-robin by default)
+#    - Forwarding traffic to healthy Pods that match the selector
+# 6. DNS: Kubernetes automatically creates DNS records for Services (e.g., my-app-svc.default.svc.cluster.local)
+# 7. Service Discovery: Pods can access the Service using its name, and Kubernetes DNS resolves it to the ClusterIP
+# 8. Session Affinity: By default, requests are load balanced randomly; can be configured for sticky sessions
+# 9. Health Checks: Only healthy Pods (passing readiness probes) receive traffic
+# 10. Scaling: As Pods are added/removed, the Service automatically updates its load balancing rules
+#
+# Use Cases for ClusterIP:
+# - Internal communication between microservices within the cluster
+# - Database connections, API calls between application components
+# - Not suitable for external traffic (use LoadBalancer or NodePort for that)
+#
+# Limitations:
+# - Not accessible from outside the cluster
+# - Requires kube-proxy to be running on nodes
+# - Traffic must originate from within the cluster
